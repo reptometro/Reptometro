@@ -15,23 +15,30 @@
 
         /* Two-Column Flexbox Layout */
         body, html {
-            height: 100%;
+            min-height: 100%;
             width: 100%;
             background-color: #f4f4f4;
             display: flex;
-            overflow: hidden; /* Prevents scrolling if image fits viewport */
+            overflow: hidden;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
         }
 
         /* Left Panel (Sidebar) */
         .sidebar {
             width: 320px;
+            min-height: 100vh;
+            min-height: 100dvh;
             background-color: #04ADE2;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Centers the menu vertically */
+            justify-content: center;
             padding: 2rem;
             z-index: 10;
-            border-right: 3px solid #111111; /* Strong structural division */
+            border-right: 3px solid #111111;
             flex-shrink: 0;
         }
 
@@ -39,24 +46,24 @@
             display: flex;
             flex-direction: column;
             list-style: none;
-            gap: 1.5rem; /* Spacing matching the sketch blocks */
+            gap: 1.5rem;
         }
 
         /* Enhanced Geometric Button Styling */
         .nav-item a {
             display: block;
             padding: 1rem 1.5rem;
-            background-color: #ffffff; /* Solid white block to contrast the blue */
-            color: #111111; /* Stark black text */
+            background-color: #ffffff;
+            color: #111111;
             text-decoration: none;
             font-weight: 700;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            border: none; /* Removed the thin white border */
+            border: none;
             border-radius: 0;
             text-align: left;
-            transition: background-color 0s, color 0s; /* 0s transition for an instant, punchy snap */
+            transition: background-color 0s, color 0s;
         }
 
         /* Stark Inversion on Hover */
@@ -67,7 +74,9 @@
 
         /* Hero Image Container */
         .hero-background {
-            flex-grow: 1; /* Expands to fill the remaining screen width */
+            flex: 1;
+            min-height: 100vh;
+            min-height: 100dvh;
             background-image: url('IMG_0082.png');
             background-size: cover;
             background-position: center;
@@ -77,16 +86,28 @@
             align-items: center;
             justify-content: center;
             padding: 2rem;
+            isolation: isolate;
+        }
+
+        /* Dark overlay improves contrast against the image */
+        .hero-background::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.48);
+            z-index: -1;
         }
 
         .hero-title {
             max-width: 900px;
-            color: #ffffff;
+            color: #04ADE2;
             font-size: clamp(1.5rem, 3vw, 3rem);
             font-weight: 700;
             line-height: 1.2;
             text-align: center;
-            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
+            position: relative;
+            z-index: 1;
         }
 
         /* Mobile Responsiveness */
@@ -95,14 +116,19 @@
                 flex-direction: column;
                 overflow: auto;
             }
+
             .sidebar {
                 width: 100%;
+                min-height: auto;
                 border-right: none;
                 border-bottom: 3px solid #111111;
                 padding: 2rem 1.5rem;
             }
+
             .hero-background {
-                min-height: 60vh; /* Ensures image is still visible below menu */
+                min-height: 60vh;
+                min-height: 60dvh;
+                flex: 1;
             }
         }
     </style>
