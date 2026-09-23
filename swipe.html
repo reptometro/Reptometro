@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
-        /* Base Reset and Typography */
         * {
             margin: 0;
             padding: 0;
@@ -24,7 +23,6 @@
             background-color: #f4f4f4;
         }
 
-        /* One map keeps every layer in the same coordinate system. */
         .comparison-container,
         .map {
             height: 100vh;
@@ -35,7 +33,6 @@
             position: relative;
         }
 
-        /* Layer controls */
         .ui-container {
             position: absolute;
             top: 20px;
@@ -92,7 +89,6 @@
             color: #ffffff;
         }
 
-        /* Styling for the leaflet-side-by-side divider and drag handle. */
         .leaflet-sbs-divider {
             width: 4px;
             background: #111111;
@@ -157,27 +153,32 @@
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         });
 
-        let historicalLayer;
+        let historicalLayer = null;
         let currentLeft = googleLeft;
         let currentRight = null;
-        let swipeControl = L.control.sideBySide(currentLeft, []).addTo(map);
-        googleLeft.addTo(map);
+        let swipeControl = null;
+
+        // Only add the left layer initially. Do NOT initialize the swipe tool yet.
+        currentLeft.addTo(map);
 
         function updateLayer(side, layerKey) {
             const next = layerKey === 'google'
                 ? (side === 'left' ? googleLeft : googleRight)
                 : historicalLayer;
 
-            // The TIFF is loaded asynchronously; do not change the active button
-            // until the requested layer is available.
             if (!next) return false;
 
+            // FIX 1: The layer must be added to the map before the swipe tool can clip it.
+            next.addTo(map);
+
             if (side === 'left') {
+                if (currentLeft && currentLeft !== next) map.removeLayer(currentLeft);
                 currentLeft = next;
-                swipeControl.setLeftLayers(currentLeft);
+                if (swipeControl) swipeControl.setLeftLayers(currentLeft);
             } else {
+                if (currentRight && currentRight !== next) map.removeLayer(currentRight);
                 currentRight = next;
-                swipeControl.setRightLayers(currentRight);
+                if (swipeControl) swipeControl.setRightLayers(currentRight);
             }
 
             return true;
@@ -196,7 +197,7 @@
         bindLayerButtons('.left-btn', 'left');
         bindLayerButtons('.right-btn', 'right');
 
-        // 1937 historical aerial image supplied by SOAR.
+        // Fetch and process 1937 historical aerial image
         fetch('image00002_powered_by_soar.tiff')
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -210,11 +211,8 @@
                     georaster,
                     opacity: 1,
                     resolution: 256,
-                    // Render the single-band TIFF as grayscale RGB.
                     pixelValuesToColorFn: values => {
                         const pixelValue = values[0];
-
-                        // Treat missing, negative, TIFF NoData, and 256 values as transparent.
                         if (
                             !Number.isFinite(pixelValue) ||
                             pixelValue < 0 ||
@@ -223,19 +221,19 @@
                         ) {
                             return null;
                         }
-
-                        // Clamp values to the valid RGB range before rendering.
                         const val = Math.max(0, Math.min(255, Math.round(pixelValue)));
                         return `rgb(${val}, ${val}, ${val})`;
                     }
                 });
 
+                // FIX 2: Add TIFF to map and initialize the swipe tool ONLY after it finishes loading.
+                historicalLayer.addTo(map);
                 currentRight = historicalLayer;
-                swipeControl.setRightLayers(currentRight);
+
+                swipeControl = L.control.sideBySide(currentLeft, currentRight).addTo(map);
 
                 const bounds = historicalLayer.getBounds();
                 if (bounds && bounds.isValid()) {
-                    // A single map means both sides of the swipe are fitted together.
                     map.fitBounds(bounds);
                 }
             })
