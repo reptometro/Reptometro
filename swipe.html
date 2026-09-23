@@ -233,7 +233,8 @@
             });
         });
 
-        fetch('1937swipe.tiff')
+        // 1937 historical aerial image supplied by SOAR.
+        fetch('image00002_powered_by_soar.tiff')
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.arrayBuffer();
@@ -255,7 +256,7 @@
                     rightMap.fitBounds(bounds);
                 }
             })
-            .catch(error => console.error('Error loading 1937 TIFF:', error));
+            .catch(error => console.error('Error loading 1937 SOAR TIFF:', error));
     </script>
 </body>
 </html>
