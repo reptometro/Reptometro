@@ -241,6 +241,8 @@
             })
             .then(arrayBuffer => parseGeoraster(arrayBuffer))
             .then(georaster => {
+                const noDataValue = georaster.noDataValue;
+
                 historicalLayer = new GeoRasterLayer({
                     georaster,
                     opacity: 1,
@@ -249,8 +251,13 @@
                     pixelValuesToColorFn: values => {
                         const pixelValue = values[0];
 
-                        // Treat missing, negative, and 256 values as NoData.
-                        if (!Number.isFinite(pixelValue) || pixelValue < 0 || pixelValue === 256) {
+                        // Treat missing, negative, TIFF NoData, and 256 values as transparent.
+                        if (
+                            !Number.isFinite(pixelValue) ||
+                            pixelValue < 0 ||
+                            pixelValue === 256 ||
+                            (Number.isFinite(noDataValue) && pixelValue === noDataValue)
+                        ) {
                             return null;
                         }
 
