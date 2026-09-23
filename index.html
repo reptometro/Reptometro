@@ -46,22 +46,23 @@
         .nav-item a {
             display: block;
             padding: 1rem 1.5rem;
-            background-color: #d8d8d8; /* Light grey matching sketch placeholders */
+            background-color: transparent; /* No fill */
             color: #000000;
             text-decoration: none;
             font-weight: 700;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            border: 2px solid transparent; 
+            border: 2px solid #1d5eff; /* Blue stroke */
             border-radius: 0; /* Sharp, 90-degree corners */
             text-align: left; /* Flush-left alignment for readability */
-            transition: background-color 0.2s ease, color 0.2s ease;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
         /* High-Contrast Inversion on Hover */
         .nav-item a:hover {
-            background-color: #000000;
+            background-color: #1d5eff;
+            border-color: #1d5eff;
             color: #ffffff;
         }
 
@@ -115,4 +116,3 @@
 
 </body>
 </html>
-
