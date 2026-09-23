@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio</title>
+    <style>
+        /* Base Reset and Typography */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            background-color: #f4f4f4;
+        }
+
+        /* Hero Image Container */
+        .hero-background {
+            position: relative;
+            min-height: 100vh;
+            width: 100%;
+            background-image: url('Homebg.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* Navigation Menu */
+        .navbar {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-bottom: 3px solid #111; /* Strong geometric line */
+            padding: 1.5rem 2rem;
+            position: absolute; /* Keeps it on top of the image */
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .nav-list {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            list-style: none;
+            gap: 2.5rem;
+        }
+
+        .nav-item a {
+            text-decoration: none;
+            color: #111;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            transition: color 0.2s ease;
+        }
+
+        /* Hover Effect */
+        .nav-item a:hover {
+            color: #d9230f; /* Primary accent color */
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 950px) {
+            .nav-list {
+                flex-wrap: wrap;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .navbar {
+                padding: 1.5rem 1rem;
+            }
+            .nav-list {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.2rem;
+            }
+            /* Add padding to the top of the container on mobile to account for the taller menu */
+            .hero-background {
+                padding-top: 300px; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hero-background">
+        <nav class="navbar">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="#">Físico-Espacial</a></li>
+                <li class="nav-item"><a href="#">Socioeconómico</a></li>
+                <li class="nav-item"><a href="#">Ambiental</a></li>
+                <li class="nav-item"><a href="#">Agua</a></li>
+                <li class="nav-item"><a href="#">Historico</a></li>
+                <li class="nav-item"><a href="#">Marco Regulatorio</a></li>
+                <li class="nav-item"><a href="#">Storymap</a></li>
+            </ul>
+        </nav>
+    </div>
+
+</body>
+</html>
