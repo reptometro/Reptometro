@@ -13,57 +13,49 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
+        /* Two-Column Flexbox Layout */
         body, html {
             height: 100%;
             width: 100%;
             background-color: #f4f4f4;
+            display: flex;
+            overflow: hidden; /* Prevents scrolling if image fits viewport */
         }
 
-        /* Hero Image Container */
-        .hero-background {
-            position: relative;
-            min-height: 100vh;
-            width: 100%;
-            background-image: url('IMG_0082.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-
-        /* Navigation Overlay Container */
-        .navbar {
-            width: 100%;
-            height: 100%;
-            padding: 2.5rem 2rem;
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Left Panel (Sidebar) */
+        .sidebar {
+            width: 320px;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centers the menu vertically */
+            padding: 2rem;
             z-index: 10;
-            /* The solid background and border are removed to let the image show through */
+            border-right: 3px solid #111111; /* Strong structural division */
+            flex-shrink: 0;
         }
 
         .nav-list {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            height: 100%;
             list-style: none;
+            gap: 1.5rem; /* Spacing matching the sketch blocks */
         }
 
-        /* Stark, Geometric Button Styling */
+        /* Geometric Block Buttons */
         .nav-item a {
             display: block;
-            padding: 0.75rem 1.5rem;
-            background-color: #ffffff;
+            padding: 1rem 1.5rem;
+            background-color: #d8d8d8; /* Light grey matching sketch placeholders */
             color: #000000;
             text-decoration: none;
             font-weight: 700;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            border: 2px solid #000000;
+            border: 2px solid transparent; 
             border-radius: 0; /* Sharp, 90-degree corners */
+            text-align: left; /* Flush-left alignment for readability */
             transition: background-color 0.2s ease, color 0.2s ease;
         }
 
@@ -73,31 +65,37 @@
             color: #ffffff;
         }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 1.5rem 1rem;
-            }
-            .nav-item a {
-                padding: 0.7rem 1.2rem;
-                font-size: 0.75rem;
-            }
+        /* Hero Image Container */
+        .hero-background {
+            flex-grow: 1; /* Expands to fill the remaining screen width */
+            background-image: url('IMG_0082.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
-        @media (max-width: 480px) {
-            .nav-list {
-                gap: 0.5rem;
+        /* Mobile Responsiveness */
+        @media (max-width: 900px) {
+            body, html {
+                flex-direction: column;
+                overflow: auto;
             }
-            .nav-item a {
-                text-align: center;
+            .sidebar {
                 width: 100%;
+                border-right: none;
+                border-bottom: 3px solid #111111;
+                padding: 2rem 1.5rem;
+            }
+            .hero-background {
+                min-height: 60vh; /* Ensures image is still visible below menu */
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="hero-background">
+    <!-- Left Structural Panel -->
+    <aside class="sidebar">
         <nav class="navbar">
             <ul class="nav-list">
                 <li class="nav-item"><a href="#">Físico-Espacial</a></li>
@@ -110,7 +108,11 @@
                 <li class="nav-item"><a href="swipe.html">Swipe Tool</a></li>
             </ul>
         </nav>
-    </div>
+    </aside>
+
+    <!-- Right Map Imagery -->
+    <div class="hero-background"></div>
 
 </body>
 </html>
+
