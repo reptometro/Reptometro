@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Espacial - Swipe</title>
-    
+    <title>Análisis Espacial - Comparación</title>
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -17,210 +17,245 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
-        body, html {
+        html, body {
             height: 100%;
             width: 100%;
             overflow: hidden;
             background-color: #f4f4f4;
         }
 
-        /* Map Container */
-        #map {
+        /* Two maps displayed simultaneously */
+        .comparison-container {
+            display: flex;
             height: 100vh;
             width: 100vw;
-            z-index: 1;
         }
 
-        /* UI Overlay Container */
+        .map-panel {
+            position: relative;
+            width: 50%;
+            height: 100%;
+        }
+
+        .map-panel + .map-panel {
+            border-left: 3px solid #111111;
+        }
+
+        .map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Layer controls */
         .ui-container {
             position: absolute;
             top: 20px;
             left: 20px;
+            right: 20px;
             z-index: 1000;
             display: flex;
-            gap: 1.5rem;
-            pointer-events: none; /* Lets clicks pass through to map */
+            justify-content: space-between;
+            pointer-events: none;
         }
 
-        /* Geometric Control Panels */
         .control-panel {
             background-color: #ffffff;
             border: 2px solid #000000;
-            padding: 1.5rem;
-            width: 220px;
-            pointer-events: auto; /* Re-enables clicks for the panels */
+            padding: 1rem;
+            width: 190px;
+            pointer-events: auto;
         }
 
         .panel-header {
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             border-bottom: 2px solid #000000;
             padding-bottom: 0.5rem;
         }
 
-        /* Buttons */
         .layer-btn {
             display: block;
             width: 100%;
-            padding: 0.6rem 1rem;
+            padding: 0.6rem 0.75rem;
             margin-bottom: 0.5rem;
             background-color: #ffffff;
             color: #000000;
             text-align: left;
             font-weight: 700;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border: 2px solid #000000;
+            letter-spacing: 0.04em;
+            border: 2px solid #1d5eff;
             border-radius: 0;
             cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
-        .layer-btn:hover, .layer-btn.active {
-            background-color: #000000;
+        .layer-btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .layer-btn:hover,
+        .layer-btn.active {
+            background-color: #1d5eff;
             color: #ffffff;
         }
 
-        /* Mobile Adjustments */
         @media (max-width: 600px) {
+            .comparison-container {
+                flex-direction: column;
+            }
+
+            .map-panel {
+                width: 100%;
+                height: 50%;
+            }
+
+            .map-panel + .map-panel {
+                border-left: none;
+                border-top: 3px solid #111111;
+            }
+
             .ui-container {
-                top: auto;
-                bottom: 20px;
+                top: 10px;
                 left: 10px;
                 right: 10px;
-                gap: 0.5rem;
             }
+
             .control-panel {
-                width: 50%;
-                padding: 1rem;
+                width: 150px;
+                padding: 0.75rem;
             }
         }
     </style>
 </head>
 <body>
+    <div class="comparison-container">
+        <section class="map-panel">
+            <div id="left-map" class="map"></div>
+            <div class="ui-container">
+                <div class="control-panel">
+                    <div class="panel-header">Capa Izquierda</div>
+                    <button class="layer-btn left-btn active" data-layer="google">Google Satélite</button>
+                    <button class="layer-btn left-btn" data-layer="tiff1937">1937 Histórico</button>
+                </div>
+            </div>
+        </section>
 
-    <!-- UI Overlay -->
-    <div class="ui-container">
-        <!-- Left Panel -->
-        <div class="control-panel">
-            <div class="panel-header">Capa Izquierda</div>
-            <button class="layer-btn left-btn active" data-layer="google">Google Satélite</button>
-            <button class="layer-btn left-btn" data-layer="tiff1937">1937 Histórico (TIFF)</button>
-            <button class="layer-btn left-btn" data-layer="osm">Boilerplate 1 (OSM)</button>
-            <button class="layer-btn left-btn" data-layer="blank">Boilerplate 2</button>
-        </div>
-
-        <!-- Right Panel -->
-        <div class="control-panel">
-            <div class="panel-header">Capa Derecha</div>
-            <button class="layer-btn right-btn" data-layer="google">Google Satélite</button>
-            <button class="layer-btn right-btn active" data-layer="tiff1937">1937 Histórico (TIFF)</button>
-            <button class="layer-btn right-btn" data-layer="osm">Boilerplate 1 (OSM)</button>
-            <button class="layer-btn right-btn" data-layer="blank">Boilerplate 2</button>
-        </div>
+        <section class="map-panel">
+            <div id="right-map" class="map"></div>
+            <div class="ui-container">
+                <div class="control-panel">
+                    <div class="panel-header">Capa Derecha</div>
+                    <button class="layer-btn right-btn" data-layer="google">Google Satélite</button>
+                    <button class="layer-btn right-btn active" data-layer="tiff1937">1937 Histórico</button>
+                </div>
+            </div>
+        </section>
     </div>
-
-    <!-- Map Container -->
-    <div id="map"></div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/digidem/leaflet-side-by-side/leaflet-side-by-side.js"></script>
-    
-    <!-- GeoTIFF processing libraries -->
     <script src="https://unpkg.com/geotiff"></script>
     <script src="https://unpkg.com/georaster"></script>
     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
 
     <script>
-        // 1. Initialize Map
-        const map = L.map('map', {
-            zoomControl: false // Removed default to keep UI clean, can add back if needed
-        }).setView([18.4663, -66.1057], 14); // Default coordinate setup
+        const initialView = [18.4663, -66.1057];
+        const initialZoom = 14;
 
-        // 2. Define Base Layers
-        const layers = {
-            google: L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-                maxZoom: 20,
-                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-            }),
-            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19
-            }),
-            blank: L.tileLayer(''), // Placeholder for future tiles
-            tiff1937: null // Will be populated asynchronously
-        };
+        const leftMap = L.map('left-map', { zoomControl: true }).setView(initialView, initialZoom);
+        const rightMap = L.map('right-map', { zoomControl: true }).setView(initialView, initialZoom);
 
-        // Current active layers
-        let currentLeft = layers.google;
+        const googleLeft = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+        const googleRight = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        googleLeft.addTo(leftMap);
+        googleRight.addTo(rightMap);
+
+        let historicalLayer;
+        let currentLeft = googleLeft;
         let currentRight = null;
-        let swipeControl = null;
+        let syncingMaps = false;
 
-        // Add initial left layer
-        currentLeft.addTo(map);
+        // Keep both map panes synchronized while zooming or panning either one.
+        function synchronize(source, target) {
+            source.on('move', () => {
+                if (syncingMaps) return;
+                syncingMaps = true;
+                target.setView(source.getCenter(), source.getZoom(), { animate: false });
+                syncingMaps = false;
+            });
+        }
 
-        // 3. Load Georeferenced TIFF
-        fetch("1937swipe.tiff")
-            .then(response => response.arrayBuffer())
-            .then(arrayBuffer => parseGeoraster(arrayBuffer))
-            .then(georaster => {
-                layers.tiff1937 = new GeoRasterLayer({
-                    georaster: georaster,
-                    opacity: 1,
-                    resolution: 256 // Adjust resolution for performance
-                });
+        synchronize(leftMap, rightMap);
+        synchronize(rightMap, leftMap);
 
-                // Set TIFF as default right layer once loaded
-                currentRight = layers.tiff1937;
-                currentRight.addTo(map);
-
-                // Initialize Swipe Control
-                swipeControl = L.control.sideBySide(currentLeft, currentRight).addTo(map);
-                
-                // Optional: Fit map to TIFF bounds
-                map.fitBounds(layers.tiff1937.getBounds());
-            })
-            .catch(err => console.error("Error loading TIFF (Ensure you are running a local server):", err));
-
-        // 4. UI Logic for Layer Switching
         function updateLayer(side, layerKey) {
-            const newLayer = layers[layerKey];
-            if (!newLayer || !swipeControl) return;
+            const map = side === 'left' ? leftMap : rightMap;
+            const current = side === 'left' ? currentLeft : currentRight;
+            const next = layerKey === 'google'
+                ? (side === 'left' ? googleLeft : googleRight)
+                : historicalLayer;
+
+            if (!next || next === current) return;
+            if (current) map.removeLayer(current);
+            next.addTo(map);
 
             if (side === 'left') {
-                if (currentLeft) map.removeLayer(currentLeft);
-                currentLeft = newLayer;
-                currentLeft.addTo(map);
-                swipeControl.setLeftLayers(currentLeft);
+                currentLeft = next;
             } else {
-                if (currentRight) map.removeLayer(currentRight);
-                currentRight = newLayer;
-                currentRight.addTo(map);
-                swipeControl.setRightLayers(currentRight);
+                currentRight = next;
             }
         }
 
-        // Button Event Listeners
-        document.querySelectorAll('.left-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.left-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                updateLayer('left', e.target.getAttribute('data-layer'));
+        document.querySelectorAll('.left-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.left-btn').forEach(item => item.classList.remove('active'));
+                button.classList.add('active');
+                updateLayer('left', button.dataset.layer);
             });
         });
 
-        document.querySelectorAll('.right-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.right-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                updateLayer('right', e.target.getAttribute('data-layer'));
+        document.querySelectorAll('.right-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.right-btn').forEach(item => item.classList.remove('active'));
+                button.classList.add('active');
+                updateLayer('right', button.dataset.layer);
             });
         });
 
+        fetch('1937swipe.tiff')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => parseGeoraster(arrayBuffer))
+            .then(georaster => {
+                historicalLayer = new GeoRasterLayer({
+                    georaster,
+                    opacity: 1,
+                    resolution: 256
+                });
+
+                historicalLayer.addTo(rightMap);
+                currentRight = historicalLayer;
+
+                const bounds = historicalLayer.getBounds();
+                if (bounds && bounds.isValid()) {
+                    leftMap.fitBounds(bounds);
+                    rightMap.fitBounds(bounds);
+                }
+            })
+            .catch(error => console.error('Error loading 1937 TIFF:', error));
     </script>
 </body>
 </html>
