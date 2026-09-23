@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Espacial - Comparación</title>
+    <title>Análisis Espacial - Swipe Tool</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
+        /* Base Reset and Typography */
         * {
             margin: 0;
             padding: 0;
@@ -23,24 +24,20 @@
             background-color: #f4f4f4;
         }
 
-        .comparison-container,
+        .map-container,
         .map {
             height: 100vh;
             width: 100vw;
-        }
-
-        .comparison-container {
             position: relative;
         }
 
+        /* Layer controls */
         .ui-container {
             position: absolute;
             top: 20px;
             left: 20px;
-            right: 20px;
             z-index: 1000;
             display: flex;
-            justify-content: space-between;
             pointer-events: none;
         }
 
@@ -48,7 +45,7 @@
             background-color: #ffffff;
             border: 2px solid #000000;
             padding: 1rem;
-            width: 190px;
+            width: 220px;
             pointer-events: auto;
         }
 
@@ -74,9 +71,10 @@
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            border: 2px solid #1d5eff;
+            border: 2px solid #111111;
             border-radius: 0;
             cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         .layer-btn:last-child {
@@ -85,119 +83,101 @@
 
         .layer-btn:hover,
         .layer-btn.active {
-            background-color: #1d5eff;
+            background-color: #111111;
             color: #ffffff;
         }
 
-        .leaflet-sbs-divider {
-            width: 4px;
-            background: #111111;
+        /* FORCE SWIPE HANDLE VISIBILITY */
+        .leaflet-sbs-range {
+            z-index: 9999 !important; /* Forces slider thumb above all layers */
+            cursor: ew-resize !important;
         }
 
-        .leaflet-sbs-range {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            cursor: ew-resize;
+        .leaflet-sbs-divider {
+            z-index: 9998 !important; /* Forces divider line above map */
+            background-color: #111111 !important; /* Matches UI border color */
+            width: 4px !important;
+            pointer-events: none;
         }
 
         @media (max-width: 600px) {
             .ui-container {
                 top: 10px;
                 left: 10px;
-                right: 10px;
             }
-
             .control-panel {
-                width: 150px;
+                width: 180px;
                 padding: 0.75rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="comparison-container">
+    <div class="map-container">
         <div id="map" class="map"></div>
         <div class="ui-container">
             <div class="control-panel">
-                <div class="panel-header">Capa Izquierda</div>
+                <div class="panel-header">Capa Base (Izquierda)</div>
                 <button class="layer-btn left-btn active" data-layer="google">Google Satélite</button>
-                <button class="layer-btn left-btn" data-layer="tiff1937">1937 Histórico</button>
-            </div>
-            <div class="control-panel">
-                <div class="panel-header">Capa Derecha</div>
-                <button class="layer-btn right-btn" data-layer="google">Google Satélite</button>
-                <button class="layer-btn right-btn active" data-layer="tiff1937">1937 Histórico</button>
+                <button class="layer-btn left-btn" data-layer="osm">OpenStreetMap</button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-side-by-side@2.0.2/leaflet-side-by-side.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/digidem/leaflet-side-by-side/leaflet-side-by-side.min.js"></script>
     <script src="https://unpkg.com/geotiff"></script>
     <script src="https://unpkg.com/georaster"></script>
     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
 
     <script>
+        // 1. Initialize Map
         const initialView = [18.4663, -66.1057];
         const initialZoom = 14;
         const map = L.map('map', { zoomControl: true }).setView(initialView, initialZoom);
 
-        const googleLeft = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        });
-        const googleRight = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        });
+        // 2. Define Base Layers for Left Side
+        const baseLayers = {
+            google: L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            }),
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            })
+        };
 
         let historicalLayer = null;
-        let currentLeft = googleLeft;
-        let currentRight = null;
+        let currentLeft = baseLayers.google;
         let swipeControl = null;
 
-        // Only add the left layer initially. Do NOT initialize the swipe tool yet.
+        // Add initial left layer
         currentLeft.addTo(map);
 
-        function updateLayer(side, layerKey) {
-            const next = layerKey === 'google'
-                ? (side === 'left' ? googleLeft : googleRight)
-                : historicalLayer;
+        // 3. UI Logic for Left Panel
+        function updateLeftLayer(layerKey) {
+            const nextLayer = baseLayers[layerKey];
+            if (!nextLayer || nextLayer === currentLeft) return;
 
-            if (!next) return false;
+            nextLayer.addTo(map); // Add new layer first
+            map.removeLayer(currentLeft); // Remove old layer
+            currentLeft = nextLayer;
 
-            // FIX 1: The layer must be added to the map before the swipe tool can clip it.
-            next.addTo(map);
-
-            if (side === 'left') {
-                if (currentLeft && currentLeft !== next) map.removeLayer(currentLeft);
-                currentLeft = next;
-                if (swipeControl) swipeControl.setLeftLayers(currentLeft);
-            } else {
-                if (currentRight && currentRight !== next) map.removeLayer(currentRight);
-                currentRight = next;
-                if (swipeControl) swipeControl.setRightLayers(currentRight);
+            if (swipeControl) {
+                swipeControl.setLeftLayers(currentLeft);
             }
-
-            return true;
         }
 
-        function bindLayerButtons(selector, side) {
-            document.querySelectorAll(selector).forEach(button => {
-                button.addEventListener('click', () => {
-                    if (!updateLayer(side, button.dataset.layer)) return;
-                    document.querySelectorAll(selector).forEach(item => item.classList.remove('active'));
-                    button.classList.add('active');
-                });
+        document.querySelectorAll('.left-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.left-btn').forEach(item => item.classList.remove('active'));
+                button.classList.add('active');
+                updateLeftLayer(button.dataset.layer);
             });
-        }
+        });
 
-        bindLayerButtons('.left-btn', 'left');
-        bindLayerButtons('.right-btn', 'right');
-
-        // Fetch and process 1937 historical aerial image
+        // 4. Fetch and Process 1937 Historical TIFF (Right Side)
         fetch('image00002_powered_by_soar.tiff')
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -226,12 +206,13 @@
                     }
                 });
 
-                // FIX 2: Add TIFF to map and initialize the swipe tool ONLY after it finishes loading.
+                // Add TIFF to map
                 historicalLayer.addTo(map);
-                currentRight = historicalLayer;
 
-                swipeControl = L.control.sideBySide(currentLeft, currentRight).addTo(map);
+                // Initialize Swipe Tool with Left and Right layers
+                swipeControl = L.control.sideBySide(currentLeft, historicalLayer).addTo(map);
 
+                // Auto-center map on historical data
                 const bounds = historicalLayer.getBounds();
                 if (bounds && bounds.isValid()) {
                     map.fitBounds(bounds);
