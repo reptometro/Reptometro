@@ -244,7 +244,20 @@
                 historicalLayer = new GeoRasterLayer({
                     georaster,
                     opacity: 1,
-                    resolution: 256
+                    resolution: 256,
+                    // Render the single-band TIFF as grayscale RGB.
+                    pixelValuesToColorFn: values => {
+                        const pixelValue = values[0];
+
+                        // Treat missing, negative, and 256 values as NoData.
+                        if (!Number.isFinite(pixelValue) || pixelValue < 0 || pixelValue === 256) {
+                            return null;
+                        }
+
+                        // Clamp values to the valid RGB range before rendering.
+                        const val = Math.max(0, Math.min(255, Math.round(pixelValue)));
+                        return `rgb(${val}, ${val}, ${val})`;
+                    }
                 });
 
                 historicalLayer.addTo(rightMap);
