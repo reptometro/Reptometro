@@ -24,26 +24,15 @@
             background-color: #f4f4f4;
         }
 
-        /* Two maps displayed simultaneously */
-        .comparison-container {
-            display: flex;
+        /* One map keeps every layer in the same coordinate system. */
+        .comparison-container,
+        .map {
             height: 100vh;
             width: 100vw;
         }
 
-        .map-panel {
+        .comparison-container {
             position: relative;
-            width: 50%;
-            height: 100%;
-        }
-
-        .map-panel + .map-panel {
-            border-left: 3px solid #111111;
-        }
-
-        .map {
-            height: 100%;
-            width: 100%;
         }
 
         /* Layer controls */
@@ -103,21 +92,20 @@
             color: #ffffff;
         }
 
+        /* Styling for the leaflet-side-by-side divider and drag handle. */
+        .leaflet-sbs-divider {
+            width: 4px;
+            background: #111111;
+        }
+
+        .leaflet-sbs-range {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            cursor: ew-resize;
+        }
+
         @media (max-width: 600px) {
-            .comparison-container {
-                flex-direction: column;
-            }
-
-            .map-panel {
-                width: 100%;
-                height: 50%;
-            }
-
-            .map-panel + .map-panel {
-                border-left: none;
-                border-top: 3px solid #111111;
-            }
-
             .ui-container {
                 top: 10px;
                 left: 10px;
@@ -133,31 +121,24 @@
 </head>
 <body>
     <div class="comparison-container">
-        <section class="map-panel">
-            <div id="left-map" class="map"></div>
-            <div class="ui-container">
-                <div class="control-panel">
-                    <div class="panel-header">Capa Izquierda</div>
-                    <button class="layer-btn left-btn active" data-layer="google">Google Satélite</button>
-                    <button class="layer-btn left-btn" data-layer="tiff1937">1937 Histórico</button>
-                </div>
+        <div id="map" class="map"></div>
+        <div class="ui-container">
+            <div class="control-panel">
+                <div class="panel-header">Capa Izquierda</div>
+                <button class="layer-btn left-btn active" data-layer="google">Google Satélite</button>
+                <button class="layer-btn left-btn" data-layer="tiff1937">1937 Histórico</button>
             </div>
-        </section>
-
-        <section class="map-panel">
-            <div id="right-map" class="map"></div>
-            <div class="ui-container">
-                <div class="control-panel">
-                    <div class="panel-header">Capa Derecha</div>
-                    <button class="layer-btn right-btn" data-layer="google">Google Satélite</button>
-                    <button class="layer-btn right-btn active" data-layer="tiff1937">1937 Histórico</button>
-                </div>
+            <div class="control-panel">
+                <div class="panel-header">Capa Derecha</div>
+                <button class="layer-btn right-btn" data-layer="google">Google Satélite</button>
+                <button class="layer-btn right-btn active" data-layer="tiff1937">1937 Histórico</button>
             </div>
-        </section>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-side-by-side@2.0.2/leaflet-side-by-side.js"></script>
     <script src="https://unpkg.com/geotiff"></script>
     <script src="https://unpkg.com/georaster"></script>
     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
@@ -165,9 +146,7 @@
     <script>
         const initialView = [18.4663, -66.1057];
         const initialZoom = 14;
-
-        const leftMap = L.map('left-map', { zoomControl: true }).setView(initialView, initialZoom);
-        const rightMap = L.map('right-map', { zoomControl: true }).setView(initialView, initialZoom);
+        const map = L.map('map', { zoomControl: true }).setView(initialView, initialZoom);
 
         const googleLeft = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
             maxZoom: 20,
@@ -178,60 +157,44 @@
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         });
 
-        googleLeft.addTo(leftMap);
-        googleRight.addTo(rightMap);
-
         let historicalLayer;
         let currentLeft = googleLeft;
         let currentRight = null;
-        let syncingMaps = false;
-
-        // Keep both map panes synchronized while zooming or panning either one.
-        function synchronize(source, target) {
-            source.on('move', () => {
-                if (syncingMaps) return;
-                syncingMaps = true;
-                target.setView(source.getCenter(), source.getZoom(), { animate: false });
-                syncingMaps = false;
-            });
-        }
-
-        synchronize(leftMap, rightMap);
-        synchronize(rightMap, leftMap);
+        let swipeControl = L.control.sideBySide(currentLeft, []).addTo(map);
+        googleLeft.addTo(map);
 
         function updateLayer(side, layerKey) {
-            const map = side === 'left' ? leftMap : rightMap;
-            const current = side === 'left' ? currentLeft : currentRight;
             const next = layerKey === 'google'
                 ? (side === 'left' ? googleLeft : googleRight)
                 : historicalLayer;
 
-            if (!next || next === current) return;
-            if (current) map.removeLayer(current);
-            next.addTo(map);
+            // The TIFF is loaded asynchronously; do not change the active button
+            // until the requested layer is available.
+            if (!next) return false;
 
             if (side === 'left') {
                 currentLeft = next;
+                swipeControl.setLeftLayers(currentLeft);
             } else {
                 currentRight = next;
+                swipeControl.setRightLayers(currentRight);
             }
+
+            return true;
         }
 
-        document.querySelectorAll('.left-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.left-btn').forEach(item => item.classList.remove('active'));
-                button.classList.add('active');
-                updateLayer('left', button.dataset.layer);
+        function bindLayerButtons(selector, side) {
+            document.querySelectorAll(selector).forEach(button => {
+                button.addEventListener('click', () => {
+                    if (!updateLayer(side, button.dataset.layer)) return;
+                    document.querySelectorAll(selector).forEach(item => item.classList.remove('active'));
+                    button.classList.add('active');
+                });
             });
-        });
+        }
 
-        document.querySelectorAll('.right-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.right-btn').forEach(item => item.classList.remove('active'));
-                button.classList.add('active');
-                updateLayer('right', button.dataset.layer);
-            });
-        });
+        bindLayerButtons('.left-btn', 'left');
+        bindLayerButtons('.right-btn', 'right');
 
         // 1937 historical aerial image supplied by SOAR.
         fetch('image00002_powered_by_soar.tiff')
@@ -267,13 +230,13 @@
                     }
                 });
 
-                historicalLayer.addTo(rightMap);
                 currentRight = historicalLayer;
+                swipeControl.setRightLayers(currentRight);
 
                 const bounds = historicalLayer.getBounds();
                 if (bounds && bounds.isValid()) {
-                    leftMap.fitBounds(bounds);
-                    rightMap.fitBounds(bounds);
+                    // A single map means both sides of the swipe are fitted together.
+                    map.fitBounds(bounds);
                 }
             })
             .catch(error => console.error('Error loading 1937 SOAR TIFF:', error));
